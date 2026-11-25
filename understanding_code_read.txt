@@ -1,0 +1,184 @@
+see this before makng tool: web_searchtool
+
+# ////////
+# @tool
+# def web_search(query : str) -> str:
+#     """Search the web for recent and reliable information on a topic . Returns Titles , URLs and snippets."""
+#     results = tavily.search(query=query,max_results=5)
+#     return results
+
+# print(web_search.invoke("what are the recent news of football"))
+
+# its output is:
+
+
+# {
+#     'query': 'what are the recent news of football',
+#     'follow_up_questions': None,
+#     'answer': None,
+#     'images': [],
+#     'results': [
+#         {
+#             'url': 'https://www.bbc.com/sport/football',
+#             'title': 'Football - latest news today, results & video highlights - BBC Sport',
+#             'content': "1 day ago1d\n\n  Simone Magill celebrates scoring a goal for Northern Ireland \n Five return for Wales' World
+# Cup play-off final\n\n  + Attribution\n\n    Women's Football\n\n  + Posted\n\n    1 day ago1d\n\n  Ceri Holland during Wales 
+# training\n Chelsea score late to beat PSG and close on last eight\n\n  + Attribution\n\n    Women's Football\n\n  + Posted\n\n    2 
+# days ago2d\n\n  Chelsea celebrate\n Hemp & Shaw score to give Man City vital win\n\n  + Attribution\n\n    Women's Football\n\n  + 
+# Posted\n\n    2 days ago2d [...] 8 hours ago8h\n\n  Manchester United head coach Mauricio Pochettino\n NFL great Brady could buy 
+# Chelsea stake\n\n  + Attribution\n\n    Chelsea\n\n  + Posted\n\n    9 hours ago9h\n\n  Tom Brady\n Jeers, injuries and doubters - 
+# White's journey back to the top\n\n  + Attribution\n\n    Arsenal\n\n  + Posted\n\n    1 hour ago1h\n\n  Ben White celebrating his 
+# goal against Spain. \n England to face Norway in Nations League quarter-finals; Wales to play Slovenia in play-offs\n\n  + 
+# Attribution\n\n    Football\n\n  + Posted [...] Anan Khalaili and Ilay Feingold of Israel celebrate at the Under-20 World Cup in 
+# Argentina in 2023\n Arsenal had more than 20 players on shortlist to capitalise on title win\n\n  + Attribution\n\n    Arsenal\n\n  +
+# Posted\n\n    5 September5 Sep\n\n  Arsenal manager Mikel Arteta celebrates with the Premier League trophy after the match again 
+# Crystal Palace at Selhurst Park on May 24, 2026 \n 73 goals from dropping deep - we ask Kane to break down how he did it\n\n  + 
+# Attribution\n\n    European Football",
+#             'score': 0.7162186,
+#             'raw_content': None,
+#             'id': '353681-00'
+#         },
+#         {
+#             'url': 'https://www.nfl.com/news',
+#             'title': 'Official NFL News Series: Power Rankings, QB Index, Mock Drafts & More',
+#             'content': '- NEWS\n  \n  Steelers left with \'bad taste\' after second straight loss: \'We expected to win this game\'\n
+# \n  The Pittsburgh Steelers dropped a winnable game against the Philadelphia Eagles, starting their first losing streak of the season
+# to fall to third in the AFC North.\n- NEWS\n  \n  Notable news, injuries: Chargers QB Herbert in concussion protocol\n  \n  Here are 
+# the injuries and news developments we\'re monitoring around the league on this Week 11 Sunday.\n- NEWS [...] The Indianapolis Colts 
+# have waived Daniel Jones and named Anthony Richardson the team\'s starting quarterback, head coach Shane Steichen announced 
+# Friday.\n- NEWS\n  \n  Rams WR Nacua likely out for season after undergoing knee surgery\n  \n  Rams wide receiver Puka Nacua 
+# recently underwent knee surgery and will miss "a couple months," likely keeping him out for the remainder for the 2026 season, coach 
+# Sean McVay said Friday.\n- NEWS [...] NFL.com keeps you up to date with all of the latest league news from around the NFL. Visit 
+# NFL.com\'s transaction hub for a daily breakdown.\n- NEWS\n  \n  Roundup: QB Herbert avoids finger fracture; Patriots RB to miss a 
+# few weeks\n  \n  NFL.com keeps you up to date with all of the latest league news from around the NFL. Visit NFL.com\'s transaction 
+# hub for a daily breakdown.\n- NEWS\n  \n  Notable news, injuries: Nacua (knee) to undergo testing; Bears WR concussed',
+#             'score': 0.66855574,
+#             'raw_content': None,
+#             'id': '7d424e-01'
+#         },
+#         {
+#             'url': 'https://www.skysports.com/football/news',
+#             'title': 'Football News | Sky Sports',
+#             'content': "Scott in January 'Brilliant performance' - Arteta 'pleased' with Arsenal's display vs Dortmund 'We were so 
+# naive at times' - McInnes slams Rangers performance despite win Outrageous! Sunderland U21s Jones scores halfway line screamer! 
+# Blades leave it late to draw with Saints 'Where would Rangers be without Naderi?' - Boyd hails forward after Aberdeen strike 
+# Blackpool 1-1 Leicester Stevenage 0-0 Sheffield Wednesday Poch cites Eze as he questions Barcola role in Szoboszlai goal - is he 
+# right?",
+#             'score': 0.648689,
+#             'raw_content': None,
+#             'id': 'f4e086-02'
+#         },
+#         {
+#             'url': 'https://www.cnn.com/sport',
+#             'title': 'Latest sports news, videos, interviews and comment | CNN',
+#             'content': 'facility, sparking an inquiry Alex Slitz/Getty Images He’s 19, just won $1 million and made PGA Tour history.
+# But Blades Brown hasn’t forgotten what matters most Lennart Preiss/AP Lions dominate Patriots as injuries loom large over Munich NFL 
+# game Frederic J. Brown/AFP/Getty Images Manchester United hires Mauricio Pochettino as its new head coach, US set to begin search for
+# replacement Abbie Parr/AP What to know for the first week after the NFL’s wild trade deadline Robin Jones/AFC [...] a shootout 2:26 •
+# Video 1:04 CNN Video Does USA have a real shot at winning the World Cup 1:04 • Video 1:04 Getty Images Video Iran, Egypt set to play 
+# in ‘Pride Match’ 1:04 • Analysis Andre Penner/AP Analysis A last-second goal ends the World Cup honeymoon for Mauricio Pochettino and
+# the USA. Now the real work begins • Video 1:46 Gazzaniga Family Video The story behind the World Cup trophy 1:46 • Video 1:00 Getty 
+# Images Video Why pink cleats are taking over the World Cup 1:00 • Video 1:08 Getty [...] provisionally lifts suspension of Russian 
+# Olympic Committee 1:07 • Video 0:52 Getty Images Video Mbappé hits back at Paraguay senator’s racist remarks 0:52 • Video 0:57 CNN 
+# Video Argentina fans rally behind US after World Cup loss 0:57 • Video 0:51 Getty Images Video FIFA denies Belgium’s appeal to 
+# overturn Balogun decision 0:51 • Video 1:00 Reuters Video Cape Verde soccer team returns to hero’s welcome 1:00 • Video 1:33 Getty 
+# Images Video World Cup fans question FIFA’s Balogun suspension',
+#             'score': 0.64846635,
+#             'raw_content': None,
+#             'id': '2df3b2-03'
+#         },
+#         {
+#             'url': 'https://www.tntsports.co.uk/football',
+#             'title': 'Football news - Top stories, videos & results - TNT Sports',
+#             'content': "8 hours ago\n\n[](\n\nManchester City\n\n20:00\n\nNapoli\n\nChampions League\n\n### Doku 'not here to joke 
+# around' in bid to end difficult Man City spell\n\n22 hours ago\n\n[](\n\nManchester City\n\n20:00\n\nNapoli\n\n## Premier League | 
+# Best Of\n\n## More News\n\nChampions League\n\n### De Bruyne set for emotional Etihad return as Man City face Napoli\n\n9 hours 
+# ago\n\n[](\n\nManchester City\n\n20:00\n\nNapoli\n\nPremier League\n\n### 'Way below our standards' - Moyes disappointed, Tarkowski 
+# to miss Merseyside derby after red card [...] [](\n\n## Top stories\n\nAdvertisement\n\n## More News\n\nChampions League\n\n### 
+# Galatasaray v Aston Villa LIVE - Emery's side look to get back to winning ways\n\nLeague 
+# Phase\n\nLIVE\n\nGalatasaray\n\n0\n\n0\n\nAston Villa\n\n47'\n\nLive commentary\n\nFootball\n\n### The Argentina star bidding to 
+# inherit Messi's No. 10 shirt - and being linked to Madrid and Man Utd\n\n5 hours ago\n\n[](\n\nComo\n\n20:00\n\nAEK 
+# Athens\n\nChampions League\n\n### 'I can still play' - De Bruyne eager to make mark on Man City return and in no mood to retire [...]
+# 9 hours ago\n\n[](\n\nBrentford\n\n4\n\n0\n\nEverton\n\nCommentary\n\nChampions League\n\n### 'The club believes in me' - Maatsen 
+# keen to 'give more' to repay Villa faith\n\n23 hours ago\n\n[](\n\nGalatasaray\n\n0\n\n0\n\nAston Villa\n\n47'",
+#             'score': 0.6292052,
+#             'raw_content': None,
+#             'id': '68e53b-04'
+#         }
+#     ],
+#     'response_time': 1.01,
+#     'request_id': 'cc09032d-7e7d-4dac-a312-2606b5b4e4c4'
+# }
+
+
+
+
+
+then see this:
+
+
+@tool
+def web_search(query : str) -> str:
+    """Search the web for recent and reliable information on a topic . Returns Titles , URLs and snippets."""
+    results = tavily.search(query=query,max_results=5)
+    
+    out = []
+
+    for r in results['results']:
+        out.append(
+            f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n"
+        )
+    
+    return "\n----\n".join(out)
+
+
+# print(web_search.invoke("what are the recent news of football"))
+# its output is:
+# Title: Football News | Sky Sports
+# URL: https://www.skysports.com/football/news
+# Snippet: Scott in January 'Brilliant performance' - Arteta 'pleased' with Arsenal's display vs Dortmund 'We were so naive at times' -
+# McInnes slams Rangers performance despite win Outrageous! Sunderland U21s Jones scores halfway line screamer! Blades leave it late to
+# draw with Saints 'Where would Rangers be 
+
+# ----
+# Title: Latest sports news, videos, interviews and comment | CNN
+# URL: https://www.cnn.com/sport
+# Snippet: facility, sparking an inquiry Alex Slitz/Getty Images He’s 19, just won $1 million and made PGA Tour history. But Blades 
+# Brown hasn’t forgotten what matters most Lennart Preiss/AP Lions dominate Patriots as injuries loom large over Munich NFL game 
+# Frederic J. Brown/AFP/Getty Images Manchester United
+
+# ----
+# Title: Football news - Top stories, videos & results - TNT Sports
+# URL: https://www.tntsports.co.uk/football
+# Snippet: 8 hours ago
+
+# [](
+
+# Manchester City
+
+# 20:00
+
+# Napoli
+
+# Champions League
+
+# ### Doku 'not here to joke around' in bid to end difficult Man City spell
+
+# 22 hours ago
+
+# [](
+
+# Manchester City
+
+# 20:00
+
+# Napoli
+
+# ## Premier League | Best Of
+
+# ## More News
+
+# Champions League
+
+# ### De Bruyne set for emotional Etihad return
+
