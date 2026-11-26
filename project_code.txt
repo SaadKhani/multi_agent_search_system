@@ -1,0 +1,811 @@
+﻿
+
+==================================================
+FILE: agents.py
+==================================================
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from tools import web_search , scrape_url 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+#model setup 
+llm = init_chat_model("groq:openai/gpt-oss-20b")
+
+
+#1st agent 
+def build_search_agent():
+    return create_agent(
+        model = llm,
+        tools= [web_search]
+    )
+
+#2nd agent 
+
+def build_reader_agent():
+    return create_agent(
+        model = llm,
+        tools = [scrape_url]
+    )
+
+
+#writer chain 
+
+writer_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are an expert research writer. Write clear, structured and insightful reports."),
+    ("human", """Write a detailed research report on the topic below.
+
+Topic: {topic}
+
+Research Gathered:
+{research}
+
+Structure the report as:
+- Introduction
+- Key Findings (minimum 3 well-explained points)
+- Conclusion
+- Sources (list all URLs found in the research)
+
+Be detailed, factual and professional."""),
+])
+
+writer_chain = writer_prompt | llm | StrOutputParser()
+
+#critic_chain 
+
+critic_prompt = ChatPromptTemplate.from_messages([
+     ("system", "You are a sharp and constructive research critic. Be honest and specific."),
+    ("human", """Review the research report below and evaluate it strictly.
+
+Report:
+{report}
+
+Respond in this exact format:
+
+Score: X/10
+
+Strengths:
+- ...
+- ...
+
+Areas to Improve:
+- ...
+- ...
+
+One line verdict:
+..."""),
+])
+
+critic_chain = critic_prompt | llm | StrOutputParser()
+
+
+==================================================
+FILE: app.py
+==================================================
+import streamlit as st
+import time
+from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
+
+# â”€â”€ Page config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+st.set_page_config(
+    page_title="ResearchMind Â· AI Research Agent",
+    page_icon="ðŸ”¬",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# â”€â”€ Custom CSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+/* â”€â”€ Reset & base â”€â”€ */
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+    color: #e8e4dc;
+}
+
+.stApp {
+    background: #0a0a0f;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,140,50,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,80,30,0.08) 0%, transparent 55%);
+}
+
+/* â”€â”€ Hide default streamlit chrome â”€â”€ */
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding: 2rem 3rem 4rem; max-width: 1200px; }
+
+/* â”€â”€ Hero header â”€â”€ */
+.hero {
+    text-align: center;
+    padding: 3.5rem 0 2.5rem;
+    position: relative;
+}
+.hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #ff8c32;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+.hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    color: #f0ebe0;
+    margin: 0 0 1rem;
+}
+.hero h1 span {
+    color: #ff8c32;
+}
+.hero-sub {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: #a09890;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.65;
+}
+
+/* â”€â”€ Divider â”€â”€ */
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,140,50,0.3), transparent);
+    margin: 2rem 0;
+}
+
+/* â”€â”€ Input card â”€â”€ */
+.input-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,140,50,0.15);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(8px);
+}
+
+/* â”€â”€ Streamlit input overrides â”€â”€ */
+.stTextInput > div > div > input {
+    background: #ffffff !important;
+    border: 1px solid rgba(255,140,50,0.4) !important;
+    border-radius: 10px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 1rem !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.stTextInput > div > div > input::placeholder {
+    color: #666666 !important;
+    -webkit-text-fill-color: #666666 !important;
+    opacity: 1 !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: #ff8c32 !important;
+    box-shadow: 0 0 0 3px rgba(255,140,50,0.12) !important;
+}
+.stTextInput > label {
+    font-family: 'DM Mono', monospace !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    color: #ff8c32 !important;
+    font-weight: 500 !important;
+}
+
+/* â”€â”€ Button â”€â”€ */
+.stButton > button {
+    background: linear-gradient(135deg, #ff8c32 0%, #ff5a1a 100%) !important;
+    color: #0a0a0f !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.04em !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.7rem 2.2rem !important;
+    cursor: pointer !important;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s !important;
+    box-shadow: 0 4px 20px rgba(255,140,50,0.3) !important;
+    width: 100%;
+}
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(255,140,50,0.4) !important;
+    opacity: 0.95 !important;
+}
+.stButton > button:active {
+    transform: translateY(0) !important;
+}
+
+/* â”€â”€ Pipeline step cards â”€â”€ */
+.step-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 1.5rem 1.8rem;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+.step-card.active {
+    border-color: rgba(255,140,50,0.4);
+    background: rgba(255,140,50,0.04);
+}
+.step-card.done {
+    border-color: rgba(80,200,120,0.3);
+    background: rgba(80,200,120,0.03);
+}
+.step-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 14px 0 0 14px;
+    background: rgba(255,255,255,0.05);
+    transition: background 0.3s;
+}
+.step-card.active::before { background: #ff8c32; }
+.step-card.done::before   { background: #50c878; }
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+.step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: #ff8c32;
+    opacity: 0.7;
+}
+.step-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f0ebe0;
+}
+.step-status {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+}
+.status-waiting  { color: #555; }
+.status-running  { color: #ff8c32; }
+.status-done     { color: #50c878; }
+
+/* â”€â”€ Result panels â”€â”€ */
+.result-panel {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 1.8rem 2rem;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+.result-panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ff8c32;
+    margin-bottom: 1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid rgba(255,140,50,0.15);
+}
+.result-content {
+    font-size: 0.92rem;
+    line-height: 1.8;
+    color: #cdc8bf;
+    white-space: pre-wrap;
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* â”€â”€ Report & feedback panels â”€â”€ */
+.report-panel {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,140,50,0.2);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-top: 1rem;
+}
+.feedback-panel {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(80,200,120,0.2);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-top: 1rem;
+}
+
+/* â”€â”€ Improve readability of AI-generated content â”€â”€ */
+.report-panel,
+.feedback-panel {
+    color: #ffffff !important;
+}
+
+.report-panel p,
+.report-panel li,
+.report-panel h1,
+.report-panel h2,
+.report-panel h3,
+.report-panel strong,
+.report-panel td,
+.feedback-panel p,
+.feedback-panel li,
+.feedback-panel h1,
+.feedback-panel h2,
+.feedback-panel h3,
+.feedback-panel strong {
+    color: #ffffff !important;
+}
+
+/* Raw search and reader outputs */
+.result-content {
+    color: #ffffff !important;
+}
+.panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.7rem;
+}
+.panel-label.orange {
+    color: #ff8c32;
+    border-bottom: 1px solid rgba(255,140,50,0.15);
+}
+.panel-label.green {
+    color: #50c878;
+    border-bottom: 1px solid rgba(80,200,120,0.15);
+}
+
+/* â”€â”€ Progress text â”€â”€ */
+.stSpinner > div { color: #ff8c32 !important; }
+
+/* â”€â”€ Expander â”€â”€ */
+details summary {
+    font-family: 'DM Mono', monospace !important;
+    font-size: 0.75rem !important;
+    color: #a09890 !important;
+    letter-spacing: 0.1em !important;
+    cursor: pointer;
+}
+
+/* â”€â”€ Section heading â”€â”€ */
+.section-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #f0ebe0;
+    margin: 2rem 0 1rem;
+}
+
+/* â”€â”€ Toast-style notice â”€â”€ */
+.notice {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #605850;
+    text-align: center;
+    margin-top: 3rem;
+    letter-spacing: 0.08em;
+}
+
+/* Force the actual Markdown output inside the report and critic sections to white.
+   These sections are scoped separately so the rest of the UI keeps its existing colors. */
+.st-key-report_output [data-testid="stMarkdownContainer"],
+.st-key-report_output [data-testid="stMarkdownContainer"] *,
+.st-key-critic_output [data-testid="stMarkdownContainer"],
+.st-key-critic_output [data-testid="stMarkdownContainer"] * {
+    color: #ffffff !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# â”€â”€ Helper: render a step card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def step_card(num: str, title: str, state: str, desc: str = ""):
+    status_map = {
+        "waiting": ("WAITING", "status-waiting"),
+        "running": ("â— RUNNING", "status-running"),
+        "done":    ("âœ“ DONE",   "status-done"),
+    }
+    label, cls = status_map.get(state, ("", ""))
+    card_cls = {"running": "active", "done": "done"}.get(state, "")
+    st.markdown(f"""
+    <div class="step-card {card_cls}">
+        <div class="step-header">
+            <span class="step-num">{num}</span>
+            <span class="step-title">{title}</span>
+            <span class="step-status {cls}">{label}</span>
+        </div>
+        {"<div style='font-size:0.82rem;color:#706860;margin-top:0.3rem;'>"+desc+"</div>" if desc else ""}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# â”€â”€ Session state init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+for key in ("results", "running", "done"):
+    if key not in st.session_state:
+        st.session_state[key] = {} if key == "results" else False
+
+
+# â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+st.markdown("""
+<div class="hero">
+    <div class="hero-eyebrow">Multi-Agent AI System</div>
+    <h1>Research<span>Mind</span></h1>
+    <p class="hero-sub">
+        Four specialized AI agents collaborate â€” searching, scraping, writing,
+        and critiquing â€” to deliver a polished research report on any topic.
+    </p>
+</div>
+<div class="divider"></div>
+""", unsafe_allow_html=True)
+
+
+# â”€â”€ Layout: input left, pipeline right â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+col_input, col_spacer, col_pipeline = st.columns([5, 0.5, 4])
+
+with col_input:
+    st.markdown('<div class="input-card">', unsafe_allow_html=True)
+    topic = st.text_input(
+        "Research Topic",
+        placeholder="e.g. Quantum computing breakthroughs in 2025",
+        key="topic_input",
+        label_visibility="visible",
+    )
+    run_btn = st.button("âš¡  Run Research Pipeline", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Example chips
+    st.markdown("""
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+        <span style="font-family:'DM Mono',monospace;font-size:0.68rem;color:#605850;letter-spacing:0.1em;">TRY â†’</span>
+    """, unsafe_allow_html=True)
+    examples = ["LLM agents 2025", "CRISPR gene editing", "Fusion energy progress"]
+    for ex in examples:
+        st.markdown(f"""
+        <span style="
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);
+            border-radius:6px;
+            padding:0.25rem 0.7rem;
+            font-size:0.75rem;
+            color:#a09890;
+            font-family:'DM Sans',sans-serif;
+            cursor:default;
+        ">{ex}</span>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with col_pipeline:
+    st.markdown('<div class="section-heading">Pipeline</div>', unsafe_allow_html=True)
+
+    r = st.session_state.results
+    done = st.session_state.done
+
+    def s(step):
+        if not r:
+            return "waiting"
+        steps = ["search", "reader", "writer", "critic"]
+        idx = steps.index(step)
+        completed = list(r.keys())
+        # figure out which steps are done
+        if step in r:
+            return "done"
+        # which step is running now (first not in r)
+        if st.session_state.running:
+            for i, k in enumerate(steps):
+                if k not in r:
+                    return "running" if k == step else "waiting"
+        return "waiting"
+
+    step_card("01", "Search Agent",  s("search"), "Gathers recent web information")
+    step_card("02", "Reader Agent",  s("reader"), "Scrapes & extracts deep content")
+    step_card("03", "Writer Chain",  s("writer"), "Drafts the full research report")
+    step_card("04", "Critic Chain",  s("critic"), "Reviews & scores the report")
+
+
+# â”€â”€ Run pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if run_btn:
+    if not topic.strip():
+        st.warning("Please enter a research topic first.")
+    else:
+        st.session_state.results = {}
+        st.session_state.running = True
+        st.session_state.done = False
+        st.rerun()
+
+if st.session_state.running and not st.session_state.done:
+    results = {}
+    topic_val = st.session_state.topic_input
+
+    # â”€â”€ Step 1: Search â”€â”€
+    with st.spinner("ðŸ”  Search Agent is workingâ€¦"):
+        search_agent = build_search_agent()
+        sr = search_agent.invoke({
+            "messages": [("user", f"Find recent, reliable and detailed information about: {topic_val}")]
+        })
+        results["search"] = sr["messages"][-1].content
+        st.session_state.results = dict(results)
+    st.rerun() if False else None   # keep inline for now
+
+    # â”€â”€ Step 2: Reader â”€â”€
+    with st.spinner("ðŸ“„  Reader Agent is scraping top resourcesâ€¦"):
+        reader_agent = build_reader_agent()
+        rr = reader_agent.invoke({
+            "messages": [("user",
+                f"Based on the following search results about '{topic_val}', "
+                f"pick the most relevant URL and scrape it for deeper content.\n\n"
+                f"Search Results:\n{results['search'][:800]}"
+            )]
+        })
+        results["reader"] = rr["messages"][-1].content
+        st.session_state.results = dict(results)
+
+    # â”€â”€ Step 3: Writer â”€â”€
+    with st.spinner("âœï¸  Writer is drafting the reportâ€¦"):
+        research_combined = (
+            f"SEARCH RESULTS:\n{results['search']}\n\n"
+            f"DETAILED SCRAPED CONTENT:\n{results['reader']}"
+        )
+        results["writer"] = writer_chain.invoke({
+            "topic": topic_val,
+            "research": research_combined
+        })
+        st.session_state.results = dict(results)
+
+    # â”€â”€ Step 4: Critic â”€â”€
+    with st.spinner("ðŸ§  Critic is reviewing the reportâ€¦"):
+        results["critic"] = critic_chain.invoke({
+            "report": results["writer"]
+        })
+        st.session_state.results = dict(results)
+
+    st.session_state.running = False
+    st.session_state.done = True
+    st.rerun()
+
+
+# â”€â”€ Results display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+r = st.session_state.results
+
+if r:
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-heading">Results</div>', unsafe_allow_html=True)
+
+    # Raw outputs in expanders
+    if "search" in r:
+        with st.expander("ðŸ” Search Results (raw)", expanded=False):
+            st.markdown(f'<div class="result-panel"><div class="result-panel-title">Search Agent Output</div>'
+                        f'<div class="result-content">{r["search"]}</div></div>', unsafe_allow_html=True)
+
+    if "reader" in r:
+        with st.expander("ðŸ“„ Scraped Content (raw)", expanded=False):
+            st.markdown(f'<div class="result-panel"><div class="result-panel-title">Reader Agent Output</div>'
+                        f'<div class="result-content">{r["reader"]}</div></div>', unsafe_allow_html=True)
+
+    # Final report
+    if "writer" in r:
+        with st.container(key="report_output"):
+            st.markdown("""
+            <div class="report-panel">
+                <div class="panel-label orange">ðŸ“ Final Research Report</div>
+            """, unsafe_allow_html=True)
+            st.markdown(r["writer"])   # render markdown natively
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # Download
+        st.download_button(
+            label="â¬‡  Download Report (.md)",
+            data=r["writer"],
+            file_name=f"research_report_{int(time.time())}.md",
+            mime="text/markdown",
+        )
+
+    # Critic feedback
+    if "critic" in r:
+        with st.container(key="critic_output"):
+            st.markdown("""
+            <div class="feedback-panel">
+                <div class="panel-label green">ðŸ§ Critic Feedback</div>
+            """, unsafe_allow_html=True)
+            st.markdown(r["critic"])
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+# â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+st.markdown("""
+<div class="notice">
+    ResearchMind Â· Powered by LangChain multi-agent pipeline Â· Built with Streamlit
+</div>
+""", unsafe_allow_html=True)
+
+
+==================================================
+FILE: pipeline.py
+==================================================
+from agents import build_reader_agent , build_search_agent , writer_chain , critic_chain
+
+def run_research_pipeline(topic : str) -> dict:
+
+    state = {}
+
+    #search agent working 
+    print("\n"+" ="*50)
+    print("step 1 - search agent is working ...")
+    print("="*50)
+
+    search_agent = build_search_agent()
+    search_result = search_agent.invoke({
+        "messages" : [("user", f"Find recent, reliable and detailed information about: {topic}")]
+    })
+    state["search_results"] = search_result['messages'][-1].content
+
+    print("\n search result ",state['search_results'])
+
+    #step 2 - reader agent 
+    print("\n"+" ="*50)
+    print("step 2 - Reader agent is scraping top resources ...")
+    print("="*50)
+
+    reader_agent = build_reader_agent()
+    reader_result = reader_agent.invoke({
+        "messages": [("user",
+            f"Based on the following search results about '{topic}', "
+            f"pick the most relevant URL and scrape it for deeper content.\n\n"
+            f"Search Results:\n{state['search_results'][:800]}"
+        )]
+    })
+
+    state['scraped_content'] = reader_result['messages'][-1].content
+
+    print("\nscraped content: \n", state['scraped_content'])
+
+    #step 3 - writer chain 
+
+    print("\n"+" ="*50)
+    print("step 3 - Writer is drafting the report ...")
+    print("="*50)
+
+    research_combined = (
+        f"SEARCH RESULTS : \n {state['search_results']} \n\n"
+        f"DETAILED SCRAPED CONTENT : \n {state['scraped_content']}"
+    )
+
+    state["report"] = writer_chain.invoke({
+        "topic" : topic,
+        "research" : research_combined
+    })
+
+    print("\n Final Report\n",state['report'])
+
+    #critic report 
+
+    print("\n"+" ="*50)
+    print("step 4 - critic is reviewing the report ")
+    print("="*50)
+
+    state["feedback"] = critic_chain.invoke({
+        "report":state['report']
+    })
+
+    print("\n critic report \n", state['feedback'])
+
+    return state
+
+
+
+if __name__ == "__main__":
+    topic = input("\n Enter a research topic : ")
+    run_research_pipeline(topic)
+
+
+==================================================
+FILE: requirements.txt
+==================================================
+# Core LLM + LangChain ecosystem
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-openai>=0.1.0
+
+# OpenAI
+openai>=1.30.0
+
+# Tavily Search Tool
+tavily-python>=0.3.0
+
+# Web scraping
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+lxml>=5.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Async support (important for agents/tools)
+aiohttp>=3.9.0
+
+# Data handling (optional but useful in pipelines)
+pandas>=2.0.0
+
+# Token counting / text utils
+tiktoken>=0.6.0
+
+# Logging / debugging (optional but recommended)
+rich>=13.7.0
+
+# Retry + robustness
+tenacity>=8.2.0
+
+# JSON handling improvements
+orjson>=3.9.0
+
+# Typing support (helps in bigger projects)
+pydantic>=2.5.0
+
+# Optional (for advanced parsing / HTML cleanup)
+html5lib>=1.1
+
+
+==================================================
+FILE: tools.py
+==================================================
+from langchain.tools import tool 
+import requests
+from bs4 import BeautifulSoup
+from tavily import TavilyClient
+import os 
+from dotenv import load_dotenv
+from rich import print
+load_dotenv()
+
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+@tool
+def web_search(query : str) -> str:
+    """Search the web for recent and reliable information on a topic . Returns Titles , URLs and snippets."""
+    results = tavily.search(query=query,max_results=5)
+    
+    out = []
+
+    for r in results['results']:
+        out.append(
+            f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n"
+        )
+    
+    return "\n----\n".join(out)
+
+
+
+@tool
+def scrape_url(url: str) -> str:
+    """Scrape and return clean text content from a given URL for deeper reading."""
+    try:
+        resp = requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        soup = BeautifulSoup(resp.text, "html.parser")
+        for tag in soup(["script", "style", "nav", "footer"]):
+            tag.decompose()
+        return soup.get_text(separator=" ", strip=True)[:3000]
+    except Exception as e:
+        return f"Could not scrape URL: {str(e)}"

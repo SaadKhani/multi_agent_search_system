@@ -88,14 +88,21 @@ html, body, [class*="css"] {
 
 /* ── Streamlit input overrides ── */
 .stTextInput > div > div > input {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(255,140,50,0.25) !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(255,140,50,0.4) !important;
     border-radius: 10px !important;
-    color: #f0ebe0 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     font-family: 'DM Sans', sans-serif !important;
     font-size: 1rem !important;
     padding: 0.75rem 1rem !important;
     transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.stTextInput > div > div > input::placeholder {
+    color: #666666 !important;
+    -webkit-text-fill-color: #666666 !important;
+    opacity: 1 !important;
 }
 .stTextInput > div > div > input:focus {
     border-color: #ff8c32 !important;
@@ -239,6 +246,33 @@ html, body, [class*="css"] {
     padding: 2rem 2.5rem;
     margin-top: 1rem;
 }
+
+/* ── Improve readability of AI-generated content ── */
+.report-panel,
+.feedback-panel {
+    color: #ffffff !important;
+}
+
+.report-panel p,
+.report-panel li,
+.report-panel h1,
+.report-panel h2,
+.report-panel h3,
+.report-panel strong,
+.report-panel td,
+.feedback-panel p,
+.feedback-panel li,
+.feedback-panel h1,
+.feedback-panel h2,
+.feedback-panel h3,
+.feedback-panel strong {
+    color: #ffffff !important;
+}
+
+/* Raw search and reader outputs */
+.result-content {
+    color: #ffffff !important;
+}
 .panel-label {
     font-family: 'DM Mono', monospace;
     font-size: 0.7rem;
@@ -286,6 +320,16 @@ details summary {
     margin-top: 3rem;
     letter-spacing: 0.08em;
 }
+
+/* Force the actual Markdown output inside the report and critic sections to white.
+   These sections are scoped separately so the rest of the UI keeps its existing colors. */
+.st-key-report_output [data-testid="stMarkdownContainer"],
+.st-key-report_output [data-testid="stMarkdownContainer"] *,
+.st-key-critic_output [data-testid="stMarkdownContainer"],
+.st-key-critic_output [data-testid="stMarkdownContainer"] * {
+    color: #ffffff !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -475,12 +519,13 @@ if r:
 
     # Final report
     if "writer" in r:
-        st.markdown("""
-        <div class="report-panel">
-            <div class="panel-label orange">📝 Final Research Report</div>
-        """, unsafe_allow_html=True)
-        st.markdown(r["writer"])   # render markdown natively
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(key="report_output"):
+            st.markdown("""
+            <div class="report-panel">
+                <div class="panel-label orange">📝 Final Research Report</div>
+            """, unsafe_allow_html=True)
+            st.markdown(r["writer"])   # render markdown natively
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # Download
         st.download_button(
@@ -492,12 +537,13 @@ if r:
 
     # Critic feedback
     if "critic" in r:
-        st.markdown("""
-        <div class="feedback-panel">
-            <div class="panel-label green">🧐 Critic Feedback</div>
-        """, unsafe_allow_html=True)
-        st.markdown(r["critic"])
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(key="critic_output"):
+            st.markdown("""
+            <div class="feedback-panel">
+                <div class="panel-label green">🧐 Critic Feedback</div>
+            """, unsafe_allow_html=True)
+            st.markdown(r["critic"])
+            st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── Footer ────────────────────────────────────────────────────────────────────
