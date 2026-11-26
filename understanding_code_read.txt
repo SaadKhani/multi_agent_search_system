@@ -1,3 +1,12 @@
+1. .env
+2. requirements.txt
+3. tools.py
+4. agents.py
+5. pipline.py
+6. app.py
+
+
+
 see this before makng tool: web_searchtool
 
 # ////////
